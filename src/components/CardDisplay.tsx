@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CardDef, CardColor } from '../types/game';
 import { CARD_MAP } from '../data/cards';
 import { ResourceCost } from './ResourceIcon';
@@ -105,6 +106,7 @@ export default function CardDisplay({ cardId, selected, unaffordable, onClick, s
 
 // Compact played card list grouped by color
 export function PlayedCards({ cardIds }: { cardIds: string[] }) {
+  const [zoomedId, setZoomedId] = useState<string | null>(null);
   const order: CardColor[] = ['brown', 'grey', 'blue', 'yellow', 'red', 'green', 'purple'];
   const grouped: Record<CardColor, string[]> = {
     brown: [], grey: [], blue: [], yellow: [], red: [], green: [], purple: [],
@@ -114,11 +116,48 @@ export function PlayedCards({ cardIds }: { cardIds: string[] }) {
     if (card) grouped[card.color].push(id);
   }
 
+  const zoomedCard = zoomedId ? CARD_MAP[zoomedId] : null;
+
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {order.flatMap(color =>
-        grouped[color].map(id => <CardDisplay key={id} cardId={id} size="mini" />)
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {order.flatMap(color =>
+          grouped[color].map(id => (
+            <CardDisplay key={id} cardId={id} size="mini" onClick={() => setZoomedId(id)} />
+          ))
+        )}
+      </div>
+
+      {zoomedCard && zoomedId && (
+        <div
+          className="modal-overlay"
+          onClick={() => setZoomedId(null)}
+        >
+          <div
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={`/images/cards/${zoomedId}.png`}
+              alt={zoomedCard.name}
+              style={{
+                maxHeight: '70vh',
+                maxWidth: '90vw',
+                borderRadius: 10,
+                border: `3px solid ${COLOR_BORDER[zoomedCard.color]}`,
+                boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
+              }}
+            />
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontWeight: 'bold', fontSize: 16, color: '#f5e6c8' }}>{zoomedCard.name}</p>
+              <p style={{ fontSize: 13, color: 'rgba(245,230,200,0.6)', marginTop: 2 }}>{effectSummary(zoomedCard)}</p>
+            </div>
+            <button className="btn btn-outline" style={{ fontSize: 13 }} onClick={() => setZoomedId(null)}>
+              Close
+            </button>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
