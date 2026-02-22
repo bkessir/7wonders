@@ -75,9 +75,18 @@ export default function GameView({ game, playerId, gameCode }: Props) {
       return;
     }
 
-    const isFreeChain = hasFreeChain(card, player);
+    // For build_wonder the card is sacrificed; cost to pay is the wonder stage cost, not the card's cost.
+    const wonderStage = type === 'build_wonder'
+      ? WONDER_MAP[player.wonderId]?.[player.wonderSide]?.stages[player.wonderStagesBuilt]
+      : null;
+    const effectiveCost = wonderStage
+      ? { resources: wonderStage.cost }
+      : card.cost;
+
+    // Chain and free-play abilities only apply when actually playing a card, not building a wonder.
+    const isFreeChain = type === 'play' && hasFreeChain(card, player);
     const isFreeAbility = player.canPlayFreeThisAge && type === 'play';
-    const costIsJustCoins = Object.keys(card.cost.resources).length === 0;
+    const costIsJustCoins = Object.keys(effectiveCost.resources).length === 0;
 
     if (isFreeChain || isFreeAbility || costIsJustCoins) {
       // No resource payment needed, possibly just coin cost
@@ -96,7 +105,7 @@ export default function GameView({ game, playerId, gameCode }: Props) {
     }
 
     // Need payment selection
-    const options = findPaymentOptions(card.cost, player, leftPlayer, rightPlayer);
+    const options = findPaymentOptions(effectiveCost, player, leftPlayer, rightPlayer);
     if (options.length === 0) {
       showToast("Can't afford this card!");
       return;
