@@ -1,5 +1,5 @@
 import type {
-  GameState, PlayerState, PlayerAction, CardDef, GamePhase
+  GameState, PlayerState, PlayerAction, CardDef, GamePhase, CoinChange
 } from '../types/game';
 import { CARD_MAP, buildDeck, shuffleDeck, chooseGuilds } from '../data/cards';
 import { WONDER_MAP, WONDERS } from '../data/wonders';
@@ -131,6 +131,12 @@ export function resolveTurn(game: GameState): GameState {
   let discard = [...(game.discard ?? [])];
   const actions = game.pendingActions ?? {};
 
+  // Per-player coin receipt tracking (for end-of-turn notification)
+  const coinChanges: Record<string, CoinChange> = {};
+  for (const pid of order) {
+    coinChanges[pid] = { fromLeftNeighbor: 0, fromRightNeighbor: 0, fromCard: 0 };
+  }
+
   // First pass: process all plays
   for (const pid of order) {
     const action = actions[pid];
@@ -146,6 +152,9 @@ export function resolveTurn(game: GameState): GameState {
     let newCoins = player.coins - (action.payment.left + action.payment.right);
     players[leftId] = { ...players[leftId], coins: players[leftId].coins + action.payment.left };
     players[rightId] = { ...players[rightId], coins: players[rightId].coins + action.payment.right };
+    // Track: leftId received from their right (pid); rightId received from their left (pid)
+    coinChanges[leftId].fromRightNeighbor += action.payment.left;
+    coinChanges[rightId].fromLeftNeighbor += action.payment.right;
 
     // Also deduct base coin cost
     if (card.cost.coins && !hasFreeChain(card, player) && !player.canPlayFreeThisAge && action.type === 'play') {
@@ -155,6 +164,7 @@ export function resolveTurn(game: GameState): GameState {
     if (action.type === 'trash') {
       // Discard card for 3 coins
       newCoins += 3;
+      coinChanges[pid].fromCard += 3;
       discard.push(action.cardId);
       players[pid] = { ...player, coins: newCoins, isReady: false };
       continue;
@@ -189,6 +199,7 @@ export function resolveTurn(game: GameState): GameState {
         }
       }
 
+      coinChanges[pid].fromCard += extraCoins;
       players[pid] = {
         ...player,
         coins: newCoins + extraCoins,
@@ -214,10 +225,13 @@ export function resolveTurn(game: GameState): GameState {
       for (const eff of card.effects) {
         if (eff.type === 'coins') {
           newCoins += eff.amount;
+          coinChanges[pid].fromCard += eff.amount;
         }
       }
       // Dynamic yellow coin effects (Vineyard, Bazar, Haven, Lighthouse, CoC, Arena)
-      newCoins += calcDynamicCoins(card, player, players[leftId], players[rightId]);
+      const dynamicCoins = calcDynamicCoins(card, player, players[leftId], players[rightId]);
+      newCoins += dynamicCoins;
+      coinChanges[pid].fromCard += dynamicCoins;
 
       players[pid] = {
         ...player,
@@ -300,10 +314,21 @@ export function resolveTurn(game: GameState): GameState {
   // Discard last card of the age (7th card after 6 plays)
   const turnsPerAge = 6;
 
+  let militaryGains: Record<string, number[]> | undefined;
+
   if (newTurn > turnsPerAge) {
-    // End of age: military resolution, then next age or end
+    // End of age: snapshot tokens, run military, compute gains
+    const beforeTokens: Record<string, number[]> = {};
+    for (const pid of order) beforeTokens[pid] = [...players[pid].militaryTokens];
+
     const resolved = resolveMilitary({ ...game, players, discard });
     players = { ...resolved.players };
+
+    militaryGains = {};
+    for (const pid of order) {
+      militaryGains[pid] = players[pid].militaryTokens.slice(beforeTokens[pid].length);
+    }
+
     // Reset free-per-age flags
     for (const pid of order) {
       players[pid] = { ...players[pid], canPlayFreeThisAge: false };
@@ -331,6 +356,10 @@ export function resolveTurn(game: GameState): GameState {
         age: newAge,
         turn: 6,
         scores: scoreAll({ ...game, players, age: newAge }),
+        lastResolved: {
+          age: game.age, turn: game.turn, actions: { ...actions } as any,
+          coinChanges, militaryGains, militaryResolved: true,
+        },
       };
       return finalGame;
     }
@@ -349,7 +378,11 @@ export function resolveTurn(game: GameState): GameState {
     hands: newHands,
     discard,
     pendingActions: {},
-    lastResolved: { age: game.age, turn: game.turn, actions: { ...actions } as any },
+    lastResolved: {
+      age: game.age, turn: game.turn, actions: { ...actions } as any,
+      coinChanges,
+      ...(militaryGains ? { militaryGains, militaryResolved: true } : {}),
+    },
   };
 }
 

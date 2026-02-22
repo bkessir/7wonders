@@ -36,18 +36,54 @@ export default function GameView({ game, playerId, gameCode }: Props) {
 
   const isHost = game.hostId === playerId;
 
-  // Track coins to show gain notifications after each turn resolves
-  const prevCoinsRef = useRef<number>(-1);
+  // ── Per-turn result modals ────────────────────────────────────────────────
+  type CoinModalData = { fromLeft: number; fromRight: number; fromCard: number; cardName: string; actionType: string };
+  type MilitaryModalData = { gains: Record<string, number[]>; age: number };
+
+  const [coinModal, setCoinModal] = useState<CoinModalData | null>(null);
+  const [militaryModal, setMilitaryModal] = useState<MilitaryModalData | null>(null);
+  const pendingCoinRef = useRef<CoinModalData | null>(null);
+  const shownResolutionRef = useRef('');
+
   useEffect(() => {
-    if (!player) return;
-    if (prevCoinsRef.current === -1) {
-      prevCoinsRef.current = player.coins;
-      return;
+    if (!game.lastResolved) return;
+    const key = `${game.lastResolved.age}-${game.lastResolved.turn}`;
+    if (key === shownResolutionRef.current) return;
+    shownResolutionRef.current = key;
+
+    // Build coin modal data
+    const changes = game.lastResolved.coinChanges?.[playerId];
+    const received = changes
+      ? (changes.fromLeftNeighbor ?? 0) + (changes.fromRightNeighbor ?? 0) + (changes.fromCard ?? 0)
+      : 0;
+    let coinData: CoinModalData | null = null;
+    if (changes && received > 0) {
+      const myAction = game.lastResolved.actions?.[playerId];
+      coinData = {
+        fromLeft: changes.fromLeftNeighbor ?? 0,
+        fromRight: changes.fromRightNeighbor ?? 0,
+        fromCard: changes.fromCard ?? 0,
+        cardName: CARD_MAP[myAction?.cardId ?? '']?.name ?? '',
+        actionType: myAction?.type ?? 'play',
+      };
     }
-    const gained = player.coins - prevCoinsRef.current;
-    prevCoinsRef.current = player.coins;
-    if (gained > 0) showToast(`+${gained} 🪙`);
-  }, [game.lastResolved]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // If military ran, show it first; defer coin modal until after
+    if (game.lastResolved.militaryResolved) {
+      setMilitaryModal({ gains: game.lastResolved.militaryGains ?? {}, age: game.lastResolved.age });
+      pendingCoinRef.current = coinData;
+    } else if (coinData) {
+      setCoinModal(coinData);
+    }
+  }, [game.lastResolved?.age, game.lastResolved?.turn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function closeMilitaryModal() {
+    setMilitaryModal(null);
+    if (pendingCoinRef.current) {
+      setCoinModal(pendingCoinRef.current);
+      pendingCoinRef.current = null;
+    }
+  }
 
   // Host resolves turn when all players ready
   useEffect(() => {
@@ -428,6 +464,116 @@ export default function GameView({ game, playerId, gameCode }: Props) {
 
       {/* ── Toast ── */}
       {toast && <div className="toast">{toast}</div>}
+
+      {/* ── Military Modal (end of age) ── */}
+      {militaryModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.85)' }}
+          onClick={closeMilitaryModal}
+        >
+          <div
+            className="rounded-xl p-5 mx-4 max-w-sm w-full"
+            style={{ background: '#100a08', border: '1px solid rgba(239,68,68,0.45)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-red-300 font-bold text-base mb-4">⚔ Age {militaryModal.age} Military Results</p>
+
+            {/* Matchup vs each neighbor */}
+            {([{ neighbor: leftPlayer, label: '← Left' }, { neighbor: rightPlayer, label: 'Right →' }] as const).map(({ neighbor, label }) => {
+              if (!neighbor || !player) return null;
+              const mine = player.shields;
+              const theirs = neighbor.shields;
+              const result = mine > theirs ? 'win' : mine < theirs ? 'loss' : 'tie';
+              return (
+                <div key={label} className="flex items-center justify-between mb-2.5 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-white/35 text-xs">{label} </span>
+                    <span className="text-white/80 truncate">{neighbor.name}</span>
+                    <span className="text-white/30 text-xs ml-1">({theirs}⚔)</span>
+                  </div>
+                  <span className={
+                    result === 'win' ? 'text-green-400 font-bold ml-2' :
+                    result === 'loss' ? 'text-red-400 ml-2' :
+                    'text-white/30 ml-2'
+                  }>
+                    {result === 'win' ? '✓ WIN' : result === 'loss' ? '✗ LOSS' : '= TIE'}
+                  </span>
+                </div>
+              );
+            })}
+
+            {/* New tokens */}
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <p className="text-xs text-white/35 mb-1.5">Your tokens this age:</p>
+              {(militaryModal.gains[playerId] ?? []).length > 0 ? (
+                <div className="flex gap-1.5 flex-wrap">
+                  {(militaryModal.gains[playerId] ?? []).map((t, i) => (
+                    <img
+                      key={i}
+                      src={t === 5 ? '/images/tokens/victory5.png' : t === 3 ? '/images/tokens/victory3.png' : t === 1 ? '/images/tokens/victory1.png' : '/images/tokens/victoryminus1.png'}
+                      alt={`${t > 0 ? '+' : ''}${t}`}
+                      style={{ width: 38, height: 38, objectFit: 'contain' }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-white/25">No new tokens (all tied).</p>
+              )}
+            </div>
+
+            <button className="btn btn-outline text-xs w-full mt-4 py-2" onClick={closeMilitaryModal}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Coin Modal (received coins this turn) ── */}
+      {coinModal && !militaryModal && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 flex justify-center pb-4 px-4"
+          style={{ pointerEvents: 'none' }}
+        >
+          <div
+            className="rounded-xl p-4 w-full max-w-sm"
+            style={{ background: 'rgba(12,9,2,0.97)', border: '1px solid rgba(234,179,8,0.35)', pointerEvents: 'auto' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-yellow-300 font-bold text-sm">🪙 Coins Received</p>
+              <button className="text-white/30 text-lg leading-none" onClick={() => setCoinModal(null)}>✕</button>
+            </div>
+            <div className="space-y-1.5">
+              {coinModal.fromLeft > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/55">Trade · {leftPlayer?.name}</span>
+                  <span className="text-yellow-300 font-bold">+{coinModal.fromLeft}</span>
+                </div>
+              )}
+              {coinModal.fromRight > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/55">Trade · {rightPlayer?.name}</span>
+                  <span className="text-yellow-300 font-bold">+{coinModal.fromRight}</span>
+                </div>
+              )}
+              {coinModal.fromCard > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/55">
+                    {coinModal.actionType === 'trash' ? 'Trashed card' :
+                     coinModal.actionType === 'build_wonder' ? 'Wonder stage' :
+                     coinModal.cardName || 'Card effect'}
+                  </span>
+                  <span className="text-yellow-300 font-bold">+{coinModal.fromCard}</span>
+                </div>
+              )}
+              <div className="border-t border-white/10 pt-1.5 flex justify-between text-sm font-bold">
+                <span className="text-white/70">Total received</span>
+                <span className="text-yellow-300">+{coinModal.fromLeft + coinModal.fromRight + coinModal.fromCard}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

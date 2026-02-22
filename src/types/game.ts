@@ -136,10 +136,19 @@ export interface GameState {
   wonderAssignments?: Record<string, string>;  // playerId -> wonderId
 }
 
+export interface CoinChange {
+  fromLeftNeighbor: number;   // coins received from left neighbor's trade
+  fromRightNeighbor: number;  // coins received from right neighbor's trade
+  fromCard: number;           // coins from own card effect, wonder stage, or trash
+}
+
 export interface TurnResolution {
   age: number;
   turn: number;
   actions: Record<string, PlayerAction>;
+  coinChanges?: Record<string, CoinChange>;  // per-player coin receipts this turn
+  militaryGains?: Record<string, number[]>;  // new tokens per player (end of age only)
+  militaryResolved?: boolean;               // true when military ran this turn
 }
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
