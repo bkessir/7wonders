@@ -34,6 +34,12 @@ function effectSummary(card: CardDef): string {
   }).filter(Boolean).join(' ');
 }
 
+// Some card IDs have a trailing digit to keep them unique (e.g. loom2, glassworks2, press2)
+// but the image files don't — strip the suffix to find the right file.
+function cardImg(cardId: string): string {
+  return `/images/cards/${cardId.replace(/\d+$/, '')}.png`;
+}
+
 const COLOR_BORDER: Record<CardColor, string> = {
   brown:  '#7c4a1e',
   grey:   '#5a6578',
@@ -73,7 +79,7 @@ export default function CardDisplay({ cardId, selected, unaffordable, onClick, s
         onClick={onClick}
       >
         <img
-          src={`/images/cards/${cardId}.png`}
+          src={cardImg(cardId)}
           alt={card.name}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
@@ -88,7 +94,7 @@ export default function CardDisplay({ cardId, selected, unaffordable, onClick, s
       onClick={onClick}
     >
       <img
-        src={`/images/cards/${cardId}.png`}
+        src={cardImg(cardId)}
         alt={card.name}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 6 }}
       />
@@ -138,7 +144,7 @@ export function PlayedCards({ cardIds }: { cardIds: string[] }) {
             onClick={e => e.stopPropagation()}
           >
             <img
-              src={`/images/cards/${zoomedId}.png`}
+              src={cardImg(zoomedId)}
               alt={zoomedCard.name}
               style={{
                 maxHeight: '70vh',
