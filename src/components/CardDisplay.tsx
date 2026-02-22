@@ -62,9 +62,9 @@ export default function CardDisplay({ cardId, selected, unaffordable, onClick, s
         title={`${card.name}: ${effectSummary(card)}`}
         style={{
           display: 'inline-block',
-          width: 48,
-          height: 68,
-          borderRadius: 4,
+          width: 96,
+          height: 136,
+          borderRadius: 6,
           overflow: 'hidden',
           border: `1.5px solid ${COLOR_BORDER[card.color]}`,
           flexShrink: 0,

@@ -79,6 +79,23 @@ body {
 
 .hand-card { scroll-snap-align: start; }
 
+@media (min-width: 768px) {
+  .hand-card {
+    width: 140px;
+    min-width: 140px;
+    height: 215px;
+  }
+
+  .hand-card:hover, .hand-card.selected {
+    transform: translateY(-20px);
+  }
+
+  .hand-scroll {
+    gap: 10px;
+    padding: 24px 16px 12px;
+  }
+}
+
 /* ─── Wonder stage boxes ── */
 .stage-box {
   @apply rounded border-2 flex items-center justify-center text-xs font-bold;
