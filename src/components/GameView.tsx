@@ -173,6 +173,7 @@ export default function GameView({ game, playerId, gameCode }: Props) {
               key={pid}
               player={game.players[pid]}
               game={game}
+              direction={pid === leftId ? 'left' : pid === rightId ? 'right' : undefined}
               onClick={() => setDetailPlayer(pid)}
             />
           ))}

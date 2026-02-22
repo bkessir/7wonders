@@ -8,10 +8,11 @@ interface ChipProps {
   player: PlayerState;
   game: GameState;
   isSelf?: boolean;
+  direction?: 'left' | 'right';
   onClick?: () => void;
 }
 
-export function PlayerChip({ player, game, isSelf, onClick }: ChipProps) {
+export function PlayerChip({ player, game, isSelf, direction, onClick }: ChipProps) {
   const wonder = WONDER_MAP[player.wonderId];
   const hasSubmitted = (game.pendingActions ?? {})[player.id] != null;
   const militaryNet = player.militaryTokens.reduce((s, t) => s + t, 0);
@@ -23,9 +24,15 @@ export function PlayerChip({ player, game, isSelf, onClick }: ChipProps) {
       style={{ minWidth: 88 }}
     >
       <div className="flex items-center gap-1 mb-0.5">
+        {direction === 'left' && (
+          <span style={{ fontSize: 9, color: '#a0c4ff', flexShrink: 0 }} title="Left neighbor">←L</span>
+        )}
         <span className="text-xs font-bold truncate flex-1" title={player.name} style={{ maxWidth: 70 }}>
           {player.name}
         </span>
+        {direction === 'right' && (
+          <span style={{ fontSize: 9, color: '#ffd6a0', flexShrink: 0 }} title="Right neighbor">R→</span>
+        )}
         {hasSubmitted && <span className="text-green-400 text-xs shrink-0">✓</span>}
       </div>
       <p className="text-yellow-200/30 text-xs truncate" style={{ fontSize: 9 }}>
