@@ -230,11 +230,15 @@ export function resolveTurn(game: GameState): GameState {
     }
   }
 
-  // Second pass: resolve Halikarnassus discard picks
-  // (happens after the first pass so this turn's discards are available to pick from)
+  // Second pass: resolve Halikarnassus discard picks.
+  // Only process players whose pendingDiscardPlay flag was already set BEFORE
+  // this turn (i.e. in game.players). If the flag was just set during the first
+  // pass above (stage built this same turn), we defer it — the flag stays true
+  // and the player will see the discard picker at the start of the next turn,
+  // which is correct for both mid-age and end-of-age builds.
   for (const pid of order) {
+    if (!game.players[pid]?.pendingDiscardPlay) continue;
     const player = players[pid];
-    if (!player.pendingDiscardPlay) continue;
     const chosenId = actions[pid]?.discardChoice;
     const discardIdx = chosenId ? discard.indexOf(chosenId) : -1;
     if (chosenId && discardIdx !== -1) {
@@ -278,12 +282,19 @@ export function resolveTurn(game: GameState): GameState {
   let newAge = game.age;
   let newPhase: GamePhase = 'playing';
 
-  // Remove each player's chosen card from their hand before rotation
+  // Remove each player's chosen card from their hand before rotation.
+  // Use indexOf+splice-style removal so only ONE copy is removed — multiple
+  // copies of the same card ID can end up in a hand via rotation, and
+  // filter() would incorrectly remove all of them.
   let newHands: Record<string, string[]> = {};
   for (const pid of order) {
     const action = actions[pid];
-    const hand = (game.hands ?? {})[pid] ?? [];
-    newHands[pid] = action ? hand.filter(id => id !== action.cardId) : hand;
+    const hand = [...((game.hands ?? {})[pid] ?? [])];
+    if (action) {
+      const idx = hand.indexOf(action.cardId);
+      if (idx !== -1) hand.splice(idx, 1);
+    }
+    newHands[pid] = hand;
   }
 
   // Discard last card of the age (7th card after 6 plays)

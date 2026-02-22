@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { GameState, PlayerAction, CardDef } from '../types/game';
 import { CARD_MAP } from '../data/cards';
 import { WONDER_MAP } from '../data/wonders';
@@ -35,6 +35,19 @@ export default function GameView({ game, playerId, gameCode }: Props) {
   const rightPlayer = game.players[rightId];
 
   const isHost = game.hostId === playerId;
+
+  // Track coins to show gain notifications after each turn resolves
+  const prevCoinsRef = useRef<number>(-1);
+  useEffect(() => {
+    if (!player) return;
+    if (prevCoinsRef.current === -1) {
+      prevCoinsRef.current = player.coins;
+      return;
+    }
+    const gained = player.coins - prevCoinsRef.current;
+    prevCoinsRef.current = player.coins;
+    if (gained > 0) showToast(`+${gained} 🪙`);
+  }, [game.lastResolved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Host resolves turn when all players ready
   useEffect(() => {

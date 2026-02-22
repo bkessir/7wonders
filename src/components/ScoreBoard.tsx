@@ -1,18 +1,23 @@
+import { useState } from 'react';
 import type { GameState, ScoreBreakdown } from '../types/game';
 import { WONDER_MAP } from '../data/wonders';
 import { scoreAll } from '../engine/scoring';
+import { PlayedCards } from './CardDisplay';
 
 interface Props {
   game: GameState;
   playerId: string;
+  onPlayAgain: () => void;
 }
 
-export default function ScoreBoard({ game, playerId }: Props) {
+export default function ScoreBoard({ game, playerId, onPlayAgain }: Props) {
   const scores = game.scores ?? scoreAll(game);
   const order = [...game.playerOrder].sort(
     (a, b) => (scores[b]?.total ?? 0) - (scores[a]?.total ?? 0)
   );
   const winner = order[0];
+
+  const [detailPid, setDetailPid] = useState<string | null>(null);
 
   const categories: { key: keyof ScoreBreakdown; label: string; abbr: string; color: string }[] = [
     { key: 'blue',   label: 'Civic',     abbr: 'C',  color: '#3b82f6' },
@@ -25,6 +30,8 @@ export default function ScoreBoard({ game, playerId }: Props) {
   ];
 
   const medals = ['🥇', '🥈', '🥉'];
+
+  const detailPlayer = detailPid ? game.players[detailPid] : null;
 
   return (
     <div className="min-h-dvh p-4 pb-8">
@@ -48,10 +55,11 @@ export default function ScoreBoard({ game, playerId }: Props) {
             return (
               <div
                 key={pid}
-                className={`rounded-xl p-4 border transition-all ${
+                className={`rounded-xl p-4 border transition-all cursor-pointer active:opacity-75 ${
                   isMe ? 'border-yellow-400' : 'border-white/10'
                 }`}
                 style={{ background: isWinner ? 'rgba(234,179,8,0.08)' : 'rgba(255,255,255,0.04)' }}
+                onClick={() => setDetailPid(pid)}
               >
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl w-8 text-center">
@@ -66,9 +74,10 @@ export default function ScoreBoard({ game, playerId }: Props) {
                       {wonder?.name} — Side {player?.wonderSide?.toUpperCase()}
                     </p>
                   </div>
-                  <p className="text-2xl font-bold text-yellow-300 shrink-0">
-                    {score?.total ?? 0}
-                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="text-2xl font-bold text-yellow-300">{score?.total ?? 0}</p>
+                    <span className="text-white/20 text-xs">▶</span>
+                  </div>
                 </div>
 
                 {/* Score breakdown */}
@@ -148,10 +157,52 @@ export default function ScoreBoard({ game, playerId }: Props) {
           </table>
         </div>
 
-        <p className="text-center text-white/20 text-xs mt-6">
-          Thanks for playing 7 Wonders!
-        </p>
+        <div className="mt-8 text-center">
+          <button className="btn btn-gold px-8 py-3 text-base" onClick={onPlayAgain}>
+            ✦ Play Again
+          </button>
+          <p className="text-white/20 text-xs mt-4">Thanks for playing 7 Wonders!</p>
+        </div>
       </div>
+
+      {/* Player card detail modal */}
+      {detailPlayer && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col"
+          style={{ background: 'rgba(0,0,0,0.88)' }}
+          onClick={() => setDetailPid(null)}
+        >
+          <div
+            className="flex-1 overflow-y-auto p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="max-w-lg mx-auto pt-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-lg font-bold text-yellow-200">{detailPlayer.name}</p>
+                  <p className="text-xs text-yellow-200/40">
+                    {WONDER_MAP[detailPlayer.wonderId]?.name} — Side {detailPlayer.wonderSide.toUpperCase()}
+                  </p>
+                </div>
+                <button
+                  className="btn btn-outline text-xs px-3 py-1"
+                  onClick={() => setDetailPid(null)}
+                >
+                  Close
+                </button>
+              </div>
+              {detailPlayer.played.length > 0 ? (
+                <>
+                  <p className="section-header mb-2">Played Cards ({detailPlayer.played.length})</p>
+                  <PlayedCards cardIds={detailPlayer.played} />
+                </>
+              ) : (
+                <p className="text-white/30 text-sm text-center py-8">No cards played.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -98,10 +98,17 @@ export default function App() {
     );
   }
 
+  function handlePlayAgain() {
+    setGame(null);
+    setGameCode('');
+    setLobby(null);
+    setError('');
+  }
+
   // Show game in progress
   if (game && identity) {
     if (game.phase === 'end') {
-      return <ScoreBoard game={game} playerId={identity.id} />;
+      return <ScoreBoard game={game} playerId={identity.id} onPlayAgain={handlePlayAgain} />;
     }
     if (game.phase === 'wonder_select') {
       return (
