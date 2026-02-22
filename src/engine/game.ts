@@ -255,7 +255,14 @@ export function resolveTurn(game: GameState): GameState {
   let newTurn = game.turn + 1;
   let newAge = game.age;
   let newPhase: GamePhase = 'playing';
-  let newHands = game.hands;
+
+  // Remove each player's chosen card from their hand before rotation
+  let newHands: Record<string, string[]> = {};
+  for (const pid of order) {
+    const action = actions[pid];
+    const hand = (game.hands ?? {})[pid] ?? [];
+    newHands[pid] = action ? hand.filter(id => id !== action.cardId) : hand;
+  }
 
   // Discard last card of the age (7th card after 6 plays)
   const turnsPerAge = 6;
@@ -295,8 +302,7 @@ export function resolveTurn(game: GameState): GameState {
       return finalGame;
     }
   } else {
-    // Rotate hands for next turn (discard last hand entry from each)
-    // Each player's hand shrinks by 1 each turn
+    // Rotate hands for next turn; hands already have the played card removed
     const rotated = rotateHands(newHands, order, game.age);
     newHands = rotated;
   }
