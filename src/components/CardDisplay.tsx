@@ -61,9 +61,9 @@ export default function CardDisplay({ cardId, selected, unaffordable, onClick, s
         title={`${card.name}: ${effectSummary(card)}`}
         style={{
           display: 'inline-block',
-          width: 24,
-          height: 34,
-          borderRadius: 3,
+          width: 48,
+          height: 68,
+          borderRadius: 4,
           overflow: 'hidden',
           border: `1.5px solid ${COLOR_BORDER[card.color]}`,
           flexShrink: 0,
@@ -115,7 +115,7 @@ export function PlayedCards({ cardIds }: { cardIds: string[] }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1.5">
       {order.flatMap(color =>
         grouped[color].map(id => <CardDisplay key={id} cardId={id} size="mini" />)
       )}

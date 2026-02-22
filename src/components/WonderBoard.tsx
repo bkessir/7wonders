@@ -57,7 +57,7 @@ export default function WonderBoard({ player, game, compact = false }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-yellow-900/40 overflow-hidden" style={{ background: 'rgba(255,200,100,0.05)' }}>
+    <div className="rounded-xl border border-yellow-900/40 overflow-hidden" style={{ background: 'rgba(255,200,100,0.05)', maxWidth: 520, margin: '0 auto', width: '100%' }}>
       {/* Wonder image banner */}
       <div style={{ position: 'relative', height: 90, overflow: 'hidden' }}>
         <img
