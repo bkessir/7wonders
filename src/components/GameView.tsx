@@ -198,6 +198,10 @@ export default function GameView({ game, playerId, gameCode }: Props) {
           <span className="text-xs font-bold uppercase tracking-wider text-yellow-200/70">Age {game.age}</span>
           <span className="text-yellow-200/30">|</span>
           <span className="text-xs text-yellow-200/60">Turn {game.turn}/6</span>
+          <span className="text-yellow-200/30">|</span>
+          <span className="text-xs text-yellow-200/50" title="Direction cards are passing this age">
+            {game.age === 2 ? '← passing left' : '→ passing right'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-yellow-300">🪙 {player?.coins ?? 0}</span>

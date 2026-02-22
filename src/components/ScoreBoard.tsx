@@ -191,6 +191,27 @@ export default function ScoreBoard({ game, playerId, onPlayAgain }: Props) {
                   Close
                 </button>
               </div>
+              {/* Coins and military tokens */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                <span className="text-sm font-bold text-yellow-300">🪙 {detailPlayer.coins}</span>
+                {detailPlayer.shields > 0 && (
+                  <span className="text-sm text-red-300">⚔ {detailPlayer.shields} shields</span>
+                )}
+                {detailPlayer.militaryTokens.length > 0 && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {detailPlayer.militaryTokens.map((t, i) => (
+                      <img
+                        key={i}
+                        src={t === 5 ? '/images/tokens/victory5.png' : t === 3 ? '/images/tokens/victory3.png' : t === 1 ? '/images/tokens/victory1.png' : '/images/tokens/victoryminus1.png'}
+                        alt={`${t > 0 ? '+' : ''}${t}`}
+                        title={`${t > 0 ? '+' : ''}${t} military`}
+                        style={{ width: 28, height: 28, objectFit: 'contain' }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {detailPlayer.played.length > 0 ? (
                 <>
                   <p className="section-header mb-2">Played Cards ({detailPlayer.played.length})</p>
