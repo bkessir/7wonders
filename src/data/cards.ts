@@ -425,7 +425,7 @@ const AGE3: CardDef[] = [
   // ── Blue ──
   {
     id: 'pantheon', name: 'Pantheon', color: 'blue', age: 3,
-    cost: { resources: { clay: 2, ore: 1, glass: 1, paper: 1, linen: 2 } },
+    cost: { resources: { clay: 2, ore: 1, glass: 1, paper: 1, linen: 1 } },
     effects: [{ type: 'points', amount: 7 }],
     freeFrom: 'temple',
     chains: [],
@@ -574,7 +574,7 @@ const AGE3: CardDef[] = [
 export const GUILDS: CardDef[] = [
   {
     id: 'workersguild', name: "Workers' Guild", color: 'purple', age: 3,
-    cost: { resources: { ore: 1, clay: 1, stone: 1, wood: 1 } },
+    cost: { resources: { ore: 2, clay: 1, stone: 1, wood: 1 } },
     effects: [{ type: 'dynamic_yellow', coinsPerCard: 0, pointsPerCard: 1, cardType: 'brown', who: 'neighbors' }],
     chains: [],
     copies: copies(0, 0, 0, 0, 0),
@@ -617,7 +617,7 @@ export const GUILDS: CardDef[] = [
   },
   {
     id: 'shipownersguild', name: "Shipowners' Guild", color: 'purple', age: 3,
-    cost: { resources: { linen: 1, paper: 1, glass: 1 } },
+    cost: { resources: { wood: 3, paper: 1, glass: 1 } },
     // 1 pt per brown + grey + purple card of self
     effects: [{ type: 'dynamic_yellow', coinsPerCard: 0, pointsPerCard: 1, cardType: 'brown', who: 'self' }],
     chains: [],
