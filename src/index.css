@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-dark: #1a0e00;
+  --bg-mid: #2d1a00;
+  --gold: #c9982a;
+  --gold-light: #f0c848;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: #f5e6c8;
+  font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Card colors ── */
+.card-brown  { background-color: #7c4a1e; border-color: #5a3010; }
+.card-grey   { background-color: #5a6578; border-color: #3d4855; }
+.card-blue   { background-color: #1e3f8a; border-color: #132a5e; }
+.card-yellow { background-color: #a07010; border-color: #7a5400; }
+.card-red    { background-color: #8a1c1c; border-color: #5e0d0d; }
+.card-green  { background-color: #1c6e34; border-color: #0f4a22; }
+.card-purple { background-color: #5a1a7e; border-color: #3e1055; }
+
+/* ─── Card in hand ── */
+.hand-card {
+  @apply relative flex flex-col justify-between rounded-lg border-2 cursor-pointer
+    select-none transition-all duration-150;
+  width: 72px;
+  min-width: 72px;
+  height: 110px;
+  padding: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.hand-card:hover, .hand-card.selected {
+  transform: translateY(-12px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+}
+
+.hand-card.selected {
+  outline: 3px solid var(--gold-light);
+}
+
+.hand-card.unaffordable {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+}
+
+/* ─── Scrollable hand ── */
+.hand-scroll {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 16px 12px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) transparent;
+  scroll-snap-type: x proximity;
+}
+
+.hand-scroll::-webkit-scrollbar { height: 4px; }
+.hand-scroll::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+.hand-card { scroll-snap-align: start; }
+
+/* ─── Wonder stage boxes ── */
+.stage-box {
+  @apply rounded border-2 flex items-center justify-center text-xs font-bold;
+  min-width: 52px;
+  min-height: 40px;
+  border-color: var(--gold);
+}
+
+.stage-box.built {
+  background: linear-gradient(135deg, #7a5a00, #b89020);
+  border-color: var(--gold-light);
+}
+
+.stage-box.next {
+  background: rgba(201, 152, 42, 0.15);
+  border-style: dashed;
+  animation: pulse-gold 2s infinite;
+}
+
+.stage-box.locked {
+  background: rgba(255,255,255,0.04);
+  border-color: #555;
+  opacity: 0.5;
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 4px rgba(201,152,42,0.3); }
+  50% { box-shadow: 0 0 12px rgba(201,152,42,0.7); }
+}
+
+/* ─── Resource icons ── */
+.res-icon {
+  @apply inline-flex items-center justify-center rounded-full text-xs font-bold;
+  width: 18px; height: 18px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ─── Buttons ── */
+.btn {
+  @apply px-4 py-2 rounded-lg font-bold transition-all duration-150 select-none;
+  border: 2px solid;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #b08520, #d4a830);
+  border-color: var(--gold-light);
+  color: #1a0e00;
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c09530, #e0b840);
+  transform: translateY(-1px);
+}
+
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-red {
+  background: linear-gradient(135deg, #7a1010, #a02020);
+  border-color: #cc4444;
+  color: #fff;
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: rgba(201,152,42,0.15);
+}
+
+/* ─── Modal overlay ── */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(2px);
+}
+
+.modal-panel {
+  @apply rounded-xl p-6 w-full max-w-md mx-4;
+  background: #2d1a00;
+  border: 2px solid var(--gold);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+/* ─── Player token ── */
+.player-chip {
+  @apply rounded-lg p-2 text-xs border text-center cursor-pointer transition-all;
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.15);
+  min-width: 80px;
+}
+
+.player-chip:hover, .player-chip.self {
+  border-color: var(--gold);
+  background: rgba(201,152,42,0.1);
+}
+
+/* ─── Toasts / notifications ── */
+.toast {
+  @apply fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg z-50;
+  background: rgba(201,152,42,0.9);
+  color: #1a0e00;
+  font-weight: bold;
+  animation: fadeInUp 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+/* ─── Misc utilities ── */
+.gold-text { color: var(--gold-light); }
+.section-header {
+  @apply text-xs uppercase tracking-widest mb-2;
+  color: var(--gold);
+}
+
+input.game-input {
+  @apply w-full rounded-lg px-3 py-2 text-base outline-none;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid #555;
+  color: #f5e6c8;
+  transition: border-color 0.2s;
+}
+
+input.game-input:focus {
+  border-color: var(--gold);
+}
+
+.divider {
+  border-color: rgba(201,152,42,0.3);
+}
