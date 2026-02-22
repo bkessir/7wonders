@@ -2,16 +2,7 @@ import type { CardDef, CardColor } from '../types/game';
 import { CARD_MAP } from '../data/cards';
 import { ResourceCost } from './ResourceIcon';
 
-const COLOR_CLASS: Record<CardColor, string> = {
-  brown:  'card-brown',
-  grey:   'card-grey',
-  blue:   'card-blue',
-  yellow: 'card-yellow',
-  red:    'card-red',
-  green:  'card-green',
-  purple: 'card-purple',
-};
-
+// Used for mini card tooltips
 function effectSummary(card: CardDef): string {
   return card.effects.map(eff => {
     if (eff.type === 'resources') {
@@ -35,13 +26,22 @@ function effectSummary(card: CardDef): string {
     if (eff.type === 'dynamic_yellow') {
       const pts = eff.pointsPerCard > 0 ? `${eff.pointsPerCard}★` : '';
       const cns = eff.coinsPerCard > 0 ? `${eff.coinsPerCard}🪙` : '';
-      const who = eff.who === 'self' ? '' : eff.who === 'neighbors' ? '◀▶' : eff.who === 'left' ? '◀' : '▶';
-      return `${cns}${pts}/${eff.cardType[0].toUpperCase()}${who}`;
+      return `${cns}${pts}/${eff.cardType[0].toUpperCase()}`;
     }
     if (eff.type === 'science_wildcard') return '⚗?';
     return '';
   }).filter(Boolean).join(' ');
 }
+
+const COLOR_BORDER: Record<CardColor, string> = {
+  brown:  '#7c4a1e',
+  grey:   '#5a6578',
+  blue:   '#1e3f8a',
+  yellow: '#a07010',
+  red:    '#8a1c1c',
+  green:  '#1c6e34',
+  purple: '#5a1a7e',
+};
 
 interface CardProps {
   cardId: string;
@@ -55,57 +55,50 @@ export default function CardDisplay({ cardId, selected, unaffordable, onClick, s
   const card = CARD_MAP[cardId];
   if (!card) return null;
 
-  const colorClass = COLOR_CLASS[card.color];
-  const summary = effectSummary(card);
-  const hasCost = Object.keys(card.cost.resources).length > 0 || (card.cost.coins ?? 0) > 0;
-
   if (size === 'mini') {
     return (
       <span
-        title={`${card.name}: ${summary}`}
-        className={`inline-flex items-center justify-center rounded font-bold ${colorClass}`}
+        title={`${card.name}: ${effectSummary(card)}`}
         style={{
-          width: 22, height: 16, fontSize: 8,
-          border: '1.5px solid rgba(255,255,255,0.2)',
+          display: 'inline-block',
+          width: 24,
+          height: 34,
+          borderRadius: 3,
+          overflow: 'hidden',
+          border: `1.5px solid ${COLOR_BORDER[card.color]}`,
+          flexShrink: 0,
           cursor: onClick ? 'pointer' : 'default',
         }}
         onClick={onClick}
       >
-        {card.name[0]}
+        <img
+          src={`/images/cards/${cardId}.png`}
+          alt={card.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
       </span>
     );
   }
 
   return (
     <div
-      className={`hand-card ${colorClass} ${selected ? 'selected' : ''} ${unaffordable ? 'unaffordable' : ''}`}
+      className={`hand-card ${selected ? 'selected' : ''} ${unaffordable ? 'unaffordable' : ''}`}
+      style={{ padding: 0, overflow: 'hidden', position: 'relative' }}
       onClick={onClick}
     >
-      {/* Cost row */}
-      <div className="flex flex-wrap gap-0.5 min-h-[18px]">
-        {hasCost ? (
-          <ResourceCost resources={card.cost.resources} coins={card.cost.coins} />
-        ) : (
-          <span className="text-green-400 font-bold" style={{ fontSize: 9 }}>FREE</span>
-        )}
-        {card.freeFrom && (
-          <span className="text-yellow-400/60" style={{ fontSize: 8 }}>⛓</span>
-        )}
-      </div>
-
-      {/* Card name */}
-      <div className="text-center px-0.5">
-        <p className="text-white font-bold leading-tight" style={{ fontSize: 8.5 }}>
-          {card.name}
-        </p>
-      </div>
-
-      {/* Effect summary */}
-      <div className="text-center">
-        <p className="text-yellow-100 font-bold" style={{ fontSize: 10 }}>
-          {summary}
-        </p>
-      </div>
+      <img
+        src={`/images/cards/${cardId}.png`}
+        alt={card.name}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 6 }}
+      />
+      {/* Chain prerequisite indicator */}
+      {card.freeFrom && (
+        <span style={{
+          position: 'absolute', top: 2, right: 2,
+          fontSize: 9, lineHeight: 1,
+          textShadow: '0 0 4px rgba(0,0,0,0.9)',
+        }}>⛓</span>
+      )}
     </div>
   );
 }

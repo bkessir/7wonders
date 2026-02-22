@@ -1,6 +1,5 @@
 import type { PlayerState, GameState } from '../types/game';
 import { WONDER_MAP } from '../data/wonders';
-import { CARD_MAP } from '../data/cards';
 import ResourceIcon from './ResourceIcon';
 
 interface Props {
@@ -13,6 +12,7 @@ export default function WonderBoard({ player, game, compact = false }: Props) {
   const wonder = WONDER_MAP[player.wonderId];
   if (!wonder) return null;
   const side = wonder[player.wonderSide];
+  const wonderImgSrc = `/images/wonders/${player.wonderId}${player.wonderSide.toUpperCase()}.png`;
 
   function stageDescription(stage: any): string {
     return stage.effects.map((eff: any) => {
@@ -31,16 +31,14 @@ export default function WonderBoard({ player, game, compact = false }: Props) {
     }).filter(Boolean).join('·');
   }
 
-  function stageCostStr(cost: Record<string, number>): string {
-    return Object.entries(cost).flatMap(([r, c]) =>
-      Array.from({ length: c as number }, () => r[0].toUpperCase())
-    ).join('');
-  }
-
   if (compact) {
     return (
       <div className="flex items-center gap-1">
-        <ResourceIcon resource={side.startResource} size="xs" />
+        <img
+          src={wonderImgSrc}
+          alt={wonder.name}
+          style={{ width: 32, height: 22, objectFit: 'cover', borderRadius: 3, flexShrink: 0 }}
+        />
         {side.stages.map((stage, i) => (
           <div
             key={i}
@@ -49,7 +47,7 @@ export default function WonderBoard({ player, game, compact = false }: Props) {
               i === player.wonderStagesBuilt ? 'next' : 'locked'
             }`}
             style={{ minWidth: 38, minHeight: 32, padding: '2px 4px' }}
-            title={`Stage ${i + 1}: ${stageCostStr(stage.cost)} → ${stageDescription(stage)}`}
+            title={`Stage ${i + 1}: → ${stageDescription(stage)}`}
           >
             {i < player.wonderStagesBuilt ? '★' : stageDescription(stage)}
           </div>
@@ -59,19 +57,34 @@ export default function WonderBoard({ player, game, compact = false }: Props) {
   }
 
   return (
-    <div className="rounded-xl p-3 border border-yellow-900/40" style={{ background: 'rgba(255,200,100,0.05)' }}>
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h3 className="font-bold text-yellow-200 text-sm">{wonder.name}</h3>
-          <p className="text-xs text-yellow-200/40">Side {player.wonderSide.toUpperCase()}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-yellow-200/40">Produces:</span>
-          <ResourceIcon resource={side.startResource} size="sm" />
+    <div className="rounded-xl border border-yellow-900/40 overflow-hidden" style={{ background: 'rgba(255,200,100,0.05)' }}>
+      {/* Wonder image banner */}
+      <div style={{ position: 'relative', height: 90, overflow: 'hidden' }}>
+        <img
+          src={wonderImgSrc}
+          alt={`${wonder.name} Side ${player.wonderSide.toUpperCase()}`}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+        />
+        {/* Name overlay */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+          padding: '8px 10px 4px',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+        }}>
+          <div>
+            <span className="font-bold text-yellow-200 text-sm drop-shadow">{wonder.name}</span>
+            <span className="text-yellow-200/50 text-xs ml-2">Side {player.wonderSide.toUpperCase()}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-yellow-200/50">Produces:</span>
+            <ResourceIcon resource={side.startResource} size="sm" />
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-2">
+      {/* Stage boxes */}
+      <div className="flex gap-2 p-3">
         {side.stages.map((stage, i) => (
           <div
             key={i}

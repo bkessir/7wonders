@@ -13,7 +13,7 @@ interface ChipProps {
 
 export function PlayerChip({ player, game, isSelf, onClick }: ChipProps) {
   const wonder = WONDER_MAP[player.wonderId];
-  const hasSubmitted = game.pendingActions[player.id] != null;
+  const hasSubmitted = (game.pendingActions ?? {})[player.id] != null;
   const militaryNet = player.militaryTokens.reduce((s, t) => s + t, 0);
 
   return (
@@ -103,19 +103,15 @@ export function PlayerDetailPanel({ player, game, onClose }: DetailProps) {
 
         {/* Military tokens */}
         {player.militaryTokens.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
+          <div className="flex flex-wrap gap-1 mb-4 items-center">
             {player.militaryTokens.map((t, i) => (
-              <span
+              <img
                 key={i}
-                className="px-2 py-0.5 rounded text-xs font-bold"
-                style={{
-                  background: t > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
-                  border: `1px solid ${t > 0 ? '#22c55e' : '#ef4444'}`,
-                  color: t > 0 ? '#4ade80' : '#f87171',
-                }}
-              >
-                {t > 0 ? '+' : ''}{t}
-              </span>
+                src={t === 5 ? '/images/tokens/victory5.png' : t === 3 ? '/images/tokens/victory3.png' : t === 1 ? '/images/tokens/victory1.png' : '/images/tokens/victoryminus1.png'}
+                alt={`${t > 0 ? '+' : ''}${t}`}
+                title={`${t > 0 ? '+' : ''}${t} military`}
+                style={{ width: 28, height: 28, objectFit: 'contain' }}
+              />
             ))}
           </div>
         )}

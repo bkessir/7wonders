@@ -60,10 +60,11 @@ export default function WonderSelect({ game, playerId, gameCode }: Props) {
   const side = wonder[chosenSide];
   const confirmedCount = game.playerOrder.filter(pid => game.players[pid]?.isReady).length;
   const totalCount = game.playerOrder.length;
+  const wonderImgSrc = `/images/wonders/${player.wonderId}${chosenSide.toUpperCase()}.png`;
 
   return (
     <div className="min-h-dvh flex flex-col items-center p-4 pt-6">
-      <div className="text-center mb-5">
+      <div className="text-center mb-4">
         <h2 className="text-2xl font-bold gold-text mb-1">Choose Your Side</h2>
         <p className="text-yellow-200/50 text-sm">
           Your wonder: <strong className="text-yellow-200">{wonder.name}</strong>
@@ -71,7 +72,7 @@ export default function WonderSelect({ game, playerId, gameCode }: Props) {
       </div>
 
       {/* Side selector tabs */}
-      <div className="flex gap-3 mb-5 w-full max-w-md">
+      <div className="flex gap-3 mb-4 w-full max-w-md">
         {(['a', 'b'] as const).map(s => (
           <button
             key={s}
@@ -88,20 +89,26 @@ export default function WonderSelect({ game, playerId, gameCode }: Props) {
         ))}
       </div>
 
-      {/* Wonder stages display */}
+      {/* Wonder image */}
+      <div className="w-full max-w-md mb-4 rounded-xl overflow-hidden shadow-2xl border border-yellow-900/40">
+        <img
+          src={wonderImgSrc}
+          alt={`${wonder.name} Side ${chosenSide.toUpperCase()}`}
+          style={{ width: '100%', display: 'block', objectFit: 'cover' }}
+        />
+      </div>
+
+      {/* Stage details */}
       <div className="w-full max-w-md modal-panel mb-5">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="text-lg font-bold text-yellow-200">{wonder.name}</h3>
-            <p className="text-xs text-yellow-200/50">Side {chosenSide.toUpperCase()}</p>
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-bold text-yellow-200">Stage Details</p>
           <div className="flex items-center gap-1">
             <span className="text-xs text-yellow-200/50">Starts with</span>
             <ResourceIcon resource={side.startResource} size="sm" />
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {side.stages.map((stage, i) => (
             <div key={i} className="flex gap-3 items-start">
               <div className="text-xs font-bold text-yellow-400/70 mt-1 w-5 shrink-0">
