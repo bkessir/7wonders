@@ -23,6 +23,7 @@ export default function GameView({ game, playerId, gameCode }: Props) {
   const [detailPlayer, setDetailPlayer] = useState<string | null>(null);
   const [toast, setToast] = useState<string>('');
   const [showHand, setShowHand] = useState(true);
+  const [discardChoice, setDiscardChoice] = useState<string | null>(null);
 
   const player = game.players[playerId];
   const hand = (game.hands ?? {})[playerId] ?? [];
@@ -67,10 +68,12 @@ export default function GameView({ game, playerId, gameCode }: Props) {
         type: 'trash',
         cardId: selectedCardId,
         payment: { left: 0, right: 0 },
+        ...(player.pendingDiscardPlay && discardChoice ? { discardChoice } : {}),
       };
       await submitAction(gameCode, playerId, action);
       setSelectedCardId(null);
       setPendingAction(null);
+      setDiscardChoice(null);
       showToast(`Trashed ${card.name} for +3 coins`);
       return;
     }
@@ -95,10 +98,12 @@ export default function GameView({ game, playerId, gameCode }: Props) {
         cardId: selectedCardId,
         payment: { left: 0, right: 0 },
         ...(type === 'build_wonder' ? { wonderStageIndex: player.wonderStagesBuilt } : {}),
+        ...(player.pendingDiscardPlay && discardChoice ? { discardChoice } : {}),
       };
       await submitAction(gameCode, playerId, action);
       setSelectedCardId(null);
       setPendingAction(null);
+      setDiscardChoice(null);
       const typeStr = type as string;
       showToast(typeStr === 'trash' ? 'Trashed!' : typeStr === 'build_wonder' ? 'Building wonder stage...' : `Playing ${card.name}`);
       return;
@@ -122,17 +127,20 @@ export default function GameView({ game, playerId, gameCode }: Props) {
       cardId: selectedCardId,
       payment,
       ...(pendingAction === 'build_wonder' ? { wonderStageIndex: player?.wonderStagesBuilt } : {}),
+      ...(player?.pendingDiscardPlay && discardChoice ? { discardChoice } : {}),
     };
     await submitAction(gameCode, playerId, action);
     setShowPayment(false);
     setSelectedCardId(null);
     setPendingAction(null);
+    setDiscardChoice(null);
     const card = CARD_MAP[selectedCardId];
     showToast(pendingAction === 'build_wonder' ? 'Wonder stage submitted!' : `${card?.name} submitted!`);
   }
 
   async function handleRetract() {
     await retractAction(gameCode, playerId);
+    setDiscardChoice(null);
     showToast('Action retracted');
   }
 
@@ -182,6 +190,37 @@ export default function GameView({ game, playerId, gameCode }: Props) {
 
       {/* ── Main Scrollable Area ── */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+
+        {/* Halikarnassus: pick a card from the discard pile */}
+        {player?.pendingDiscardPlay && !hasSubmitted && (
+          <div className="rounded-xl border p-3" style={{ background: 'rgba(120,50,180,0.12)', borderColor: 'rgba(192,132,252,0.4)' }}>
+            <p className="section-header" style={{ color: '#c084fc' }}>
+              🏛 Halikarnassus — Pick a card from the discard (optional)
+            </p>
+            {game.discard.length === 0 ? (
+              <p className="text-xs text-white/30">The discard pile is empty — nothing to pick.</p>
+            ) : (
+              <>
+                <div className="hand-scroll pb-2">
+                  {game.discard.map(cardId => (
+                    <CardDisplay
+                      key={cardId}
+                      cardId={cardId}
+                      selected={discardChoice === cardId}
+                      onClick={() => setDiscardChoice(prev => prev === cardId ? null : cardId)}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs mt-1" style={{ color: discardChoice ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>
+                  {discardChoice
+                    ? `✓ Will play ${CARD_MAP[discardChoice]?.name} for free — now choose your hand card below.`
+                    : 'Tap a card to select it, or leave blank to skip.'}
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Wonder board */}
         {player && <WonderBoard player={player} game={game} />}
 
@@ -220,6 +259,11 @@ export default function GameView({ game, playerId, gameCode }: Props) {
                   <p className="text-xs text-white/40">
                     Paying: {myAction.payment.left > 0 ? `${myAction.payment.left}🪙 ← ` : ''}
                     {myAction.payment.right > 0 ? `${myAction.payment.right}🪙 →` : ''}
+                  </p>
+                )}
+                {myAction.discardChoice && (
+                  <p className="text-xs text-purple-300/70">
+                    + Taking {CARD_MAP[myAction.discardChoice]?.name ?? myAction.discardChoice} from discard
                   </p>
                 )}
               </div>

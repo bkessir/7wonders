@@ -228,6 +228,26 @@ export function resolveTurn(game: GameState): GameState {
     }
   }
 
+  // Second pass: resolve Halikarnassus discard picks
+  // (happens after the first pass so this turn's discards are available to pick from)
+  for (const pid of order) {
+    const player = players[pid];
+    if (!player.pendingDiscardPlay) continue;
+    const chosenId = actions[pid]?.discardChoice;
+    const discardIdx = chosenId ? discard.indexOf(chosenId) : -1;
+    if (chosenId && discardIdx !== -1) {
+      discard.splice(discardIdx, 1);
+      players[pid] = {
+        ...players[pid],
+        played: [...players[pid].played, chosenId],
+        pendingDiscardPlay: false,
+      };
+    } else {
+      // Skipped or invalid choice — just clear the flag
+      players[pid] = { ...players[pid], pendingDiscardPlay: false };
+    }
+  }
+
   // Determine shields for all (recompute from played cards + wonder)
   for (const pid of order) {
     const p = players[pid];
