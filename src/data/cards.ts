@@ -342,14 +342,14 @@ const AGE2: CardDef[] = [
   {
     id: 'vineyard', name: 'Vineyard', color: 'yellow', age: 2,
     cost: { resources: {} },
-    effects: [{ type: 'dynamic_yellow', coinsPerCard: 1, pointsPerCard: 0, cardType: 'brown', who: 'neighbors' }],
+    effects: [{ type: 'dynamic_yellow', coinsPerCard: 1, pointsPerCard: 0, cardType: 'brown', who: 'all' }],
     chains: [],
     copies: copies(1, 1, 1, 2, 2),
   },
   {
     id: 'bazar', name: 'Bazar', color: 'yellow', age: 2,
     cost: { resources: {} },
-    effects: [{ type: 'dynamic_yellow', coinsPerCard: 2, pointsPerCard: 0, cardType: 'grey', who: 'neighbors' }],
+    effects: [{ type: 'dynamic_yellow', coinsPerCard: 2, pointsPerCard: 0, cardType: 'grey', who: 'all' }],
     chains: [],
     copies: copies(0, 1, 1, 1, 2),
   },

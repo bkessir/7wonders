@@ -144,6 +144,30 @@ export default function GameView({ game, playerId, gameCode }: Props) {
     showToast('Action retracted');
   }
 
+  // Host-only: auto-trash the first hand card for any player who hasn't submitted.
+  // Used when a player is stuck and unable to take their turn.
+  async function handleForceAdvance() {
+    const submissions: Promise<void>[] = [];
+    for (const pid of game.playerOrder) {
+      if ((game.pendingActions ?? {})[pid] == null) {
+        const pidHand = (game.hands ?? {})[pid] ?? [];
+        if (pidHand.length > 0) {
+          submissions.push(submitAction(gameCode, pid, {
+            type: 'trash',
+            cardId: pidHand[0],
+            payment: { left: 0, right: 0 },
+          }));
+        }
+      }
+    }
+    if (submissions.length === 0) {
+      showToast('All players have already submitted');
+    } else {
+      await Promise.all(submissions);
+      showToast('Force-advanced: trashed first card for stuck players');
+    }
+  }
+
   const selectedCard = selectedCardId ? CARD_MAP[selectedCardId] : null;
   const canBuildWonder = player && player.wonderStagesBuilt < (WONDER_MAP[player.wonderId]?.[player.wonderSide]?.stages.length ?? 0);
   const submittedCount = game.playerOrder.filter(pid => (game.pendingActions ?? {})[pid] != null).length;
@@ -351,6 +375,15 @@ export default function GameView({ game, playerId, gameCode }: Props) {
               />
             ))}
           </div>
+          {isHost && submittedCount < game.playerOrder.length && (
+            <button
+              className="btn btn-outline text-xs mt-3 px-3 py-1 opacity-50 hover:opacity-100"
+              onClick={handleForceAdvance}
+              title="Emergency: auto-trash first card for any player who cannot submit"
+            >
+              Force Advance Turn
+            </button>
+          )}
         </div>
       )}
 

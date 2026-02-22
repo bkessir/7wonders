@@ -91,11 +91,20 @@ function normalizeGameState(raw: any): GameState {
       militaryTokens: (p as any).militaryTokens ?? [],
     };
   }
+  // Normalize individual player hands — Firebase removes any key whose value
+  // becomes [] (empty array), so a player mid-age could lose their hand entry.
+  // Restore it to [] (rather than undefined) for every player in the order.
+  const rawHands = raw.hands ?? {};
+  const hands: Record<string, string[]> = {};
+  for (const pid of (raw.playerOrder ?? []) as string[]) {
+    const h = rawHands[pid];
+    hands[pid] = Array.isArray(h) ? h : [];
+  }
   return {
     ...raw,
     players,
     pendingActions: raw.pendingActions ?? {},
-    hands: raw.hands ?? {},
+    hands,
     discard: raw.discard ?? [],
   };
 }

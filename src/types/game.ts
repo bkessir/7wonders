@@ -25,7 +25,7 @@ export type CardEffect =
       coinsPerCard: number;
       pointsPerCard: number;
       cardType: CardColor | 'wonder';
-      who: 'self' | 'neighbors' | 'left' | 'right' }
+      who: 'self' | 'neighbors' | 'all' | 'left' | 'right' }
   | { type: 'science_wildcard' };
 
 export interface CardDef {

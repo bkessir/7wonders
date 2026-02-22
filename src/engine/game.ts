@@ -210,12 +210,14 @@ export function resolveTurn(game: GameState): GameState {
       if (player.canPlayFreeThisAge && !hasFreeChain(card, player)) {
         usedFree = true;
       }
-      // Apply immediate coin effects (Tavern, Vineyard, Bazar, etc.)
+      // Apply immediate coin effects (Tavern, fixed amounts)
       for (const eff of card.effects) {
         if (eff.type === 'coins') {
           newCoins += eff.amount;
         }
       }
+      // Dynamic yellow coin effects (Vineyard, Bazar, Haven, Lighthouse, CoC, Arena)
+      newCoins += calcDynamicCoins(card, player, players[leftId], players[rightId]);
 
       players[pid] = {
         ...player,
@@ -352,20 +354,17 @@ export function calcDynamicCoins(
   for (const eff of card.effects) {
     if (eff.type === 'dynamic_yellow' && eff.coinsPerCard > 0) {
       let count = 0;
-      const players = eff.who === 'self' ? [player]
+      const targets = eff.who === 'self' ? [player]
         : eff.who === 'neighbors' ? [leftNeighbor, rightNeighbor]
+        : eff.who === 'all' ? [player, leftNeighbor, rightNeighbor]
         : eff.who === 'left' ? [leftNeighbor]
         : [rightNeighbor];
-      for (const p of players) {
+      for (const p of targets) {
         if (eff.cardType === 'wonder') {
           count += p.wonderStagesBuilt;
         } else {
           count += p.played.filter(id => CARD_MAP[id]?.color === eff.cardType).length;
         }
-      }
-      // Vineyard: count self too
-      if (card.id === 'vineyard') {
-        count += player.played.filter(id => CARD_MAP[id]?.color === 'brown').length;
       }
       coins += count * eff.coinsPerCard;
     }
