@@ -78,11 +78,22 @@ export async function startGameInFirebase(code: string, gameState: GameState): P
 
 // ─── Game State ───────────────────────────────────────────────────────────────
 
-// Firebase removes empty objects from the DB, so pendingActions/hands/discard
-// can come back as undefined. Normalize them to safe defaults here.
+// Firebase removes empty arrays/objects from the DB (treated as null).
+// Normalize all collections to safe defaults on every read.
 function normalizeGameState(raw: any): GameState {
+  // Normalize per-player arrays (played, militaryTokens) which start empty
+  // and would be removed by Firebase until a card is played / battle resolved.
+  const players: Record<string, any> = {};
+  for (const [pid, p] of Object.entries(raw.players ?? {})) {
+    players[pid] = {
+      ...(p as any),
+      played: (p as any).played ?? [],
+      militaryTokens: (p as any).militaryTokens ?? [],
+    };
+  }
   return {
     ...raw,
+    players,
     pendingActions: raw.pendingActions ?? {},
     hands: raw.hands ?? {},
     discard: raw.discard ?? [],
