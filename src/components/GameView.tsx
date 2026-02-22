@@ -25,8 +25,8 @@ export default function GameView({ game, playerId, gameCode }: Props) {
   const [showHand, setShowHand] = useState(true);
 
   const player = game.players[playerId];
-  const hand = game.hands[playerId] ?? [];
-  const myAction = game.pendingActions[playerId];
+  const hand = (game.hands ?? {})[playerId] ?? [];
+  const myAction = (game.pendingActions ?? {})[playerId];
   const hasSubmitted = myAction != null;
 
   const { leftId, rightId } = getNeighborIds(playerId, game.playerOrder);
@@ -129,7 +129,7 @@ export default function GameView({ game, playerId, gameCode }: Props) {
 
   const selectedCard = selectedCardId ? CARD_MAP[selectedCardId] : null;
   const canBuildWonder = player && player.wonderStagesBuilt < (WONDER_MAP[player.wonderId]?.[player.wonderSide]?.stages.length ?? 0);
-  const submittedCount = game.playerOrder.filter(pid => game.pendingActions[pid] != null).length;
+  const submittedCount = game.playerOrder.filter(pid => (game.pendingActions ?? {})[pid] != null).length;
 
   const ageColors: Record<number, string> = { 1: '#8b6914', 2: '#4a6b8a', 3: '#6a2e7a' };
 
@@ -296,7 +296,7 @@ export default function GameView({ game, playerId, gameCode }: Props) {
               <span
                 key={pid}
                 className="w-2 h-2 rounded-full"
-                style={{ background: game.pendingActions[pid] ? '#4ade80' : '#555' }}
+                style={{ background: (game.pendingActions ?? {})[pid] ? '#4ade80' : '#555' }}
                 title={game.players[pid]?.name}
               />
             ))}

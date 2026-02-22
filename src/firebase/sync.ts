@@ -78,12 +78,23 @@ export async function startGameInFirebase(code: string, gameState: GameState): P
 
 // ─── Game State ───────────────────────────────────────────────────────────────
 
+// Firebase removes empty objects from the DB, so pendingActions/hands/discard
+// can come back as undefined. Normalize them to safe defaults here.
+function normalizeGameState(raw: any): GameState {
+  return {
+    ...raw,
+    pendingActions: raw.pendingActions ?? {},
+    hands: raw.hands ?? {},
+    discard: raw.discard ?? [],
+  };
+}
+
 export function subscribeGame(
   code: string,
   callback: (game: GameState | null) => void,
 ): () => void {
   const r = ref(db, `games/${code}`);
-  const unsub = onValue(r, snap => callback(snap.exists() ? snap.val() : null));
+  const unsub = onValue(r, snap => callback(snap.exists() ? normalizeGameState(snap.val()) : null));
   return () => off(r);
 }
 

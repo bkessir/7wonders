@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { GameState } from '../types/game';
 import { WONDER_MAP } from '../data/wonders';
-import { updateGameState } from '../firebase/sync';
+import { updateGameState, confirmWonderSide } from '../firebase/sync';
 import { buildDeck, shuffleDeck, chooseGuilds } from '../data/cards';
 import ResourceIcon from './ResourceIcon';
 
@@ -27,11 +27,7 @@ export default function WonderSelect({ game, playerId, gameCode }: Props) {
   }, [allConfirmed]);
 
   async function handleConfirm() {
-    const newPlayers = {
-      ...game.players,
-      [playerId]: { ...game.players[playerId], wonderSide: chosenSide, isReady: true },
-    };
-    await updateGameState(gameCode, { ...game, players: newPlayers });
+    await confirmWonderSide(gameCode, playerId, chosenSide);
     setConfirmed(true);
   }
 

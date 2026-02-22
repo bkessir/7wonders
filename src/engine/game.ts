@@ -128,8 +128,8 @@ export function resolveTurn(game: GameState): GameState {
   const order = game.playerOrder;
   const n = order.length;
   let players = { ...game.players };
-  let discard = [...game.discard];
-  const actions = game.pendingActions;
+  let discard = [...(game.discard ?? [])];
+  const actions = game.pendingActions ?? {};
 
   // First pass: process all plays
   for (const pid of order) {
@@ -350,9 +350,8 @@ export function calcDynamicCoins(
 // ─── Check if all players have submitted ─────────────────────────────────────
 
 export function allPlayersReady(game: GameState): boolean {
-  return game.playerOrder.every(
-    pid => game.pendingActions[pid] != null
-  );
+  const actions = game.pendingActions ?? {};
+  return game.playerOrder.every(pid => actions[pid] != null);
 }
 
 // ─── Get left and right neighbor IDs ─────────────────────────────────────────
