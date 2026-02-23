@@ -131,7 +131,9 @@ export async function retractAction(code: string, playerId: string): Promise<voi
 }
 
 export async function updateGameState(code: string, state: GameState): Promise<void> {
-  await set(ref(db, `games/${code}`), state);
+  // JSON round-trip strips `undefined` values — Firebase throws if it encounters them
+  const clean = JSON.parse(JSON.stringify(state));
+  await set(ref(db, `games/${code}`), clean);
 }
 
 export async function updatePlayerName(
