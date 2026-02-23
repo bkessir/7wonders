@@ -134,6 +134,7 @@ export interface GameState {
   scores?: Record<string, ScoreBreakdown>;
   lastResolved?: TurnResolution;      // for showing what happened
   wonderAssignments?: Record<string, string>;  // playerId -> wonderId
+  babylonBonusPlayers?: string[];     // set at end of turn 6 when pendingPlayTwo players play their last card
 }
 
 export interface CoinChange {

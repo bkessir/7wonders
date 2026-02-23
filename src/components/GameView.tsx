@@ -36,6 +36,10 @@ export default function GameView({ game, playerId, gameCode }: Props) {
 
   const isHost = game.hostId === playerId;
 
+  // Babylon B "play last card" bonus turn
+  const isBabylonBonusTurn = (game.babylonBonusPlayers?.length ?? 0) > 0;
+  const isBabylonPlayer = isBabylonBonusTurn && (game.babylonBonusPlayers?.includes(playerId) ?? false);
+
   // ── Per-turn result modals ────────────────────────────────────────────────
   type CoinModalData = { fromLeft: number; fromRight: number; fromCard: number; cardName: string; actionType: string };
   type MilitaryModalData = { gains: Record<string, number[]>; age: number };
@@ -233,7 +237,9 @@ export default function GameView({ game, playerId, gameCode }: Props) {
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-yellow-200/70">Age {game.age}</span>
           <span className="text-yellow-200/30">|</span>
-          <span className="text-xs text-yellow-200/60">Turn {game.turn}/6</span>
+          <span className="text-xs text-yellow-200/60">
+            {isBabylonBonusTurn ? 'Last Card' : `Turn ${game.turn}/6`}
+          </span>
           <span className="text-yellow-200/30">|</span>
           <span className="text-xs text-yellow-200/50" title="Direction cards are passing this age">
             {game.age === 2 ? '← passing left' : '→ passing right'}
@@ -242,7 +248,9 @@ export default function GameView({ game, playerId, gameCode }: Props) {
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-yellow-300">🪙 {player?.coins ?? 0}</span>
           {player?.shields ? <span className="text-sm text-red-300">⚔ {player.shields}</span> : null}
-          {hasSubmitted ? (
+          {isBabylonBonusTurn && !isBabylonPlayer ? (
+            <span className="text-xs text-yellow-200/50 font-bold">Age Ending...</span>
+          ) : hasSubmitted ? (
             <span className="text-xs text-green-400 font-bold">✓ Waiting {submittedCount}/{game.playerOrder.length}</span>
           ) : (
             <span className="text-xs text-yellow-400 font-bold">Your Turn</span>
@@ -267,6 +275,24 @@ export default function GameView({ game, playerId, gameCode }: Props) {
 
       {/* ── Main Scrollable Area ── */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+
+        {/* Babylon B bonus turn: non-Babylon players wait */}
+        {isBabylonBonusTurn && !isBabylonPlayer && (
+          <div className="rounded-xl border p-3 text-center" style={{ background: 'rgba(30,15,60,0.5)', borderColor: 'rgba(139,92,246,0.35)' }}>
+            <p className="text-purple-300 font-bold text-sm mb-1">🏛 Babylon Bonus Turn</p>
+            <p className="text-xs text-white/45">
+              {game.babylonBonusPlayers!.map(pid => game.players[pid]?.name).join(', ')} {game.babylonBonusPlayers!.length === 1 ? 'is' : 'are'} playing their last card before the age ends.
+            </p>
+          </div>
+        )}
+
+        {/* Babylon B: prompt the active player */}
+        {isBabylonBonusTurn && isBabylonPlayer && !hasSubmitted && (
+          <div className="rounded-xl border p-3" style={{ background: 'rgba(30,15,60,0.5)', borderColor: 'rgba(139,92,246,0.6)' }}>
+            <p className="text-purple-300 font-bold text-sm">🏛 Babylon Bonus — Play your last card!</p>
+            <p className="text-xs text-white/45 mt-0.5">Instead of discarding your final card, you may play, trash, or build wonder with it.</p>
+          </div>
+        )}
 
         {/* Halikarnassus: pick a card from the discard pile */}
         {player?.pendingDiscardPlay && !hasSubmitted && (
@@ -409,6 +435,18 @@ export default function GameView({ game, playerId, gameCode }: Props) {
           {hand.length === 0 && (
             <p className="text-center text-white/30 text-sm py-4">No cards in hand</p>
           )}
+        </div>
+      )}
+
+      {/* ── Babylon bonus: non-Babylon players show a waiting bar ── */}
+      {isBabylonBonusTurn && !isBabylonPlayer && (
+        <div className="shrink-0 px-3 py-3 border-t border-white/10 text-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <p className="text-yellow-200/40 text-sm">Waiting for Babylon player...</p>
+          <div className="flex justify-center gap-1 mt-2">
+            {game.babylonBonusPlayers!.map(pid => (
+              <span key={pid} className="text-xs text-purple-300/60">{game.players[pid]?.name}</span>
+            ))}
+          </div>
         </div>
       )}
 

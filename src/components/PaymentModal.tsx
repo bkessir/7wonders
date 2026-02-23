@@ -18,7 +18,7 @@ interface Props {
 export default function PaymentModal({
   card, player, leftPlayer, rightPlayer, onConfirm, onCancel, actionType,
 }: Props) {
-  const isFreeChain = hasFreeChain(card, player);
+  const isFreeChain = actionType === 'play' && hasFreeChain(card, player);
   const isFreeAbility = player.canPlayFreeThisAge && actionType === 'play';
   const isFree = isFreeChain || isFreeAbility;
 

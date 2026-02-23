@@ -130,6 +130,8 @@ export function resolveTurn(game: GameState): GameState {
   let players = { ...game.players };
   let discard = [...(game.discard ?? [])];
   const actions = game.pendingActions ?? {};
+  // True when we're resolving the Babylon "last card" bonus turn after normal turn 6
+  const isBabylonBonus = (game.babylonBonusPlayers?.length ?? 0) > 0;
 
   // Per-player coin receipt tracking (for end-of-turn notification)
   const coinChanges: Record<string, CoinChange> = {};
@@ -291,8 +293,9 @@ export function resolveTurn(game: GameState): GameState {
     players[pid] = { ...players[pid], shields };
   }
 
-  // Advance turn
-  let newTurn = game.turn + 1;
+  // Advance turn.
+  // During Babylon bonus the turn is already 7 (> turnsPerAge); don't increment again.
+  let newTurn = isBabylonBonus ? game.turn : game.turn + 1;
   let newAge = game.age;
   let newPhase: GamePhase = 'playing';
 
@@ -317,6 +320,32 @@ export function resolveTurn(game: GameState): GameState {
   let militaryGains: Record<string, number[]> | undefined;
 
   if (newTurn > turnsPerAge) {
+    // Before ending the age: check if any player with pendingPlayTwo still has a card.
+    // Only do this on a normal turn 6 (not already in a babylon bonus turn).
+    if (!isBabylonBonus) {
+      const babylonPlayers = order.filter(
+        pid => players[pid].pendingPlayTwo && (newHands[pid]?.length ?? 0) > 0
+      );
+      if (babylonPlayers.length > 0) {
+        // Pause before ending age — let babylon players play their last card
+        return {
+          ...game,
+          phase: 'playing',
+          age: game.age,
+          turn: 7,   // signals "bonus turn" to UI and next resolveTurn call
+          players,
+          hands: newHands,  // babylon players still have their last card
+          discard,
+          pendingActions: {},
+          babylonBonusPlayers: babylonPlayers,
+          lastResolved: {
+            age: game.age, turn: game.turn, actions: { ...actions } as any,
+            coinChanges,
+          },
+        };
+      }
+    }
+
     // End of age: snapshot tokens, run military, compute gains
     const beforeTokens: Record<string, number[]> = {};
     for (const pid of order) beforeTokens[pid] = [...players[pid].militaryTokens];
@@ -353,6 +382,7 @@ export function resolveTurn(game: GameState): GameState {
         discard,
         hands: {},
         pendingActions: {},
+        babylonBonusPlayers: undefined,
         age: newAge,
         turn: 6,
         scores: scoreAll({ ...game, players, age: newAge }),
@@ -378,6 +408,7 @@ export function resolveTurn(game: GameState): GameState {
     hands: newHands,
     discard,
     pendingActions: {},
+    babylonBonusPlayers: undefined,
     lastResolved: {
       age: game.age, turn: game.turn, actions: { ...actions } as any,
       coinChanges,
@@ -420,7 +451,9 @@ export function calcDynamicCoins(
 
 export function allPlayersReady(game: GameState): boolean {
   const actions = game.pendingActions ?? {};
-  return game.playerOrder.every(pid => actions[pid] != null);
+  // During Babylon bonus turn only the bonus players need to submit
+  const required = game.babylonBonusPlayers ?? game.playerOrder;
+  return required.every(pid => actions[pid] != null);
 }
 
 // ─── Get left and right neighbor IDs ─────────────────────────────────────────
