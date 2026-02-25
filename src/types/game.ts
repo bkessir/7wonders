@@ -92,7 +92,7 @@ export interface PlayerState {
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
-export type ActionType = 'play' | 'build_wonder' | 'trash';
+export type ActionType = 'play' | 'build_wonder' | 'trash' | 'pick_discard';
 
 export interface PlayerAction {
   type: ActionType;

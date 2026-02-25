@@ -197,6 +197,17 @@ export default function GameView({ game, playerId, gameCode }: Props) {
     showToast('Action retracted');
   }
 
+  // Halikarnassus end-of-age bonus: submit just a discard pick (no hand card required)
+  async function handlePickDiscard() {
+    const action: PlayerAction = {
+      type: 'pick_discard',
+      cardId: discardChoice ?? '',
+      payment: { left: 0, right: 0 },
+    };
+    await submitAction(gameCode, playerId, action);
+    setDiscardChoice(null);
+  }
+
   // Host-only: auto-trash the first hand card for any player who hasn't submitted.
   // Used when a player is stuck and unable to take their turn.
   async function handleForceAdvance() {
@@ -276,18 +287,18 @@ export default function GameView({ game, playerId, gameCode }: Props) {
       {/* ── Main Scrollable Area ── */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
 
-        {/* Babylon B bonus turn: non-Babylon players wait */}
+        {/* Bonus turn: non-bonus players wait (Babylon B or Halikarnassus) */}
         {isBabylonBonusTurn && !isBabylonPlayer && (
           <div className="rounded-xl border p-3 text-center" style={{ background: 'rgba(30,15,60,0.5)', borderColor: 'rgba(139,92,246,0.35)' }}>
-            <p className="text-purple-300 font-bold text-sm mb-1">🏛 Babylon Bonus Turn</p>
+            <p className="text-purple-300 font-bold text-sm mb-1">⌛ Age Ending — Bonus Actions</p>
             <p className="text-xs text-white/45">
-              {game.babylonBonusPlayers!.map(pid => game.players[pid]?.name).join(', ')} {game.babylonBonusPlayers!.length === 1 ? 'is' : 'are'} playing their last card before the age ends.
+              {game.babylonBonusPlayers!.map(pid => game.players[pid]?.name).join(', ')} {game.babylonBonusPlayers!.length === 1 ? 'is' : 'are'} completing a bonus action before the age ends.
             </p>
           </div>
         )}
 
-        {/* Babylon B: prompt the active player */}
-        {isBabylonBonusTurn && isBabylonPlayer && !hasSubmitted && (
+        {/* Babylon B: prompt the active player (not shown for Halikarnassus bonus) */}
+        {isBabylonBonusTurn && isBabylonPlayer && !hasSubmitted && !player?.pendingDiscardPlay && (
           <div className="rounded-xl border p-3" style={{ background: 'rgba(30,15,60,0.5)', borderColor: 'rgba(139,92,246,0.6)' }}>
             <p className="text-purple-300 font-bold text-sm">🏛 Babylon Bonus — Play your last card!</p>
             <p className="text-xs text-white/45 mt-0.5">Instead of discarding your final card, you may play, trash, or build wonder with it.</p>
@@ -301,7 +312,15 @@ export default function GameView({ game, playerId, gameCode }: Props) {
               🏛 Halikarnassus — Pick a card from the discard (optional)
             </p>
             {game.discard.length === 0 ? (
-              <p className="text-xs text-white/30">The discard pile is empty — nothing to pick.</p>
+              <>
+                <p className="text-xs text-white/30">The discard pile is empty — nothing to pick.</p>
+                {/* Bonus turn: still need to submit even if nothing to pick */}
+                {isBabylonBonusTurn && isBabylonPlayer && (
+                  <button className="btn btn-outline text-xs mt-2 px-3 py-1 w-full" onClick={handlePickDiscard}>
+                    Skip (nothing to pick)
+                  </button>
+                )}
+              </>
             ) : (
               <>
                 <div className="hand-scroll pb-2">
@@ -314,11 +333,27 @@ export default function GameView({ game, playerId, gameCode }: Props) {
                     />
                   ))}
                 </div>
-                <p className="text-xs mt-1" style={{ color: discardChoice ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>
-                  {discardChoice
-                    ? `✓ Will play ${CARD_MAP[discardChoice]?.name} for free — now choose your hand card below.`
-                    : 'Tap a card to select it, or leave blank to skip.'}
-                </p>
+                {isBabylonBonusTurn && isBabylonPlayer ? (
+                  /* Bonus turn: submit the pick directly (no hand card needed) */
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      className="btn btn-gold flex-1 py-1.5 text-xs"
+                      disabled={!discardChoice}
+                      onClick={handlePickDiscard}
+                    >
+                      {discardChoice ? `✓ Take ${CARD_MAP[discardChoice]?.name}` : 'Select a card'}
+                    </button>
+                    <button className="btn btn-outline text-xs py-1.5 px-3" onClick={handlePickDiscard}>
+                      Skip
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs mt-1" style={{ color: discardChoice ? '#4ade80' : 'rgba(255,255,255,0.3)' }}>
+                    {discardChoice
+                      ? `✓ Will play ${CARD_MAP[discardChoice]?.name} for free — now choose your hand card below.`
+                      : 'Tap a card to select it, or leave blank to skip.'}
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -384,7 +419,8 @@ export default function GameView({ game, playerId, gameCode }: Props) {
       </div>
 
       {/* ── Hand Section ── */}
-      {!hasSubmitted && hand.length > 0 && (
+      {/* Hidden for Halikarnassus bonus players — their last hand card is auto-discarded */}
+      {!hasSubmitted && hand.length > 0 && !(isBabylonBonusTurn && isBabylonPlayer && player?.pendingDiscardPlay) && (
         <div className="shrink-0 border-t border-white/10" style={{ background: 'rgba(0,0,0,0.4)' }}>
           {/* Selected card actions */}
           {selectedCard && (

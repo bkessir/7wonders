@@ -177,7 +177,7 @@ export function resolveTurn(game: GameState): GameState {
       const side = wonder?.[player.wonderSide];
       const stageIdx = player.wonderStagesBuilt;
       const stage = side?.stages[stageIdx];
-      discard.push(action.cardId); // card is consumed
+      // Card is placed face-down under the wonder board — NOT added to the discard pile
 
       let extraCoins = 0;
       let extraShields = 0;
@@ -214,6 +214,25 @@ export function resolveTurn(game: GameState): GameState {
         canPlayFreeThisAge: newCanPlayFree,
         isReady: false,
       };
+      continue;
+    }
+
+    // Halikarnassus end-of-age bonus pick (submitted during babylonBonusPlayers turn)
+    if (action.type === 'pick_discard') {
+      const chosenId = action.cardId; // chosen discard card id, or '' to skip
+      const discardIdx = chosenId ? discard.indexOf(chosenId) : -1;
+      if (chosenId && discardIdx !== -1) {
+        discard.splice(discardIdx, 1);
+        players[pid] = {
+          ...player,
+          coins: newCoins,
+          played: [...player.played, chosenId],
+          pendingDiscardPlay: false,
+          isReady: false,
+        };
+      } else {
+        players[pid] = { ...player, coins: newCoins, pendingDiscardPlay: false, isReady: false };
+      }
       continue;
     }
 
@@ -320,24 +339,31 @@ export function resolveTurn(game: GameState): GameState {
   let militaryGains: Record<string, number[]> | undefined;
 
   if (newTurn > turnsPerAge) {
-    // Before ending the age: check if any player with pendingPlayTwo still has a card.
-    // Only do this on a normal turn 6 (not already in a babylon bonus turn).
+    // Before ending the age: check if any player needs a bonus action.
+    // Only do this on a normal turn 6 (not already in a bonus turn).
     if (!isBabylonBonus) {
+      // Babylon B: players with pendingPlayTwo who still have a last hand card to play
       const babylonPlayers = order.filter(
         pid => players[pid].pendingPlayTwo && (newHands[pid]?.length ?? 0) > 0
       );
-      if (babylonPlayers.length > 0) {
-        // Pause before ending age — let babylon players play their last card
+      // Halikarnassus: players who JUST gained pendingDiscardPlay this turn
+      // (pre-existing flags are handled by the second pass above)
+      const halikarnassusPlayers = order.filter(
+        pid => players[pid].pendingDiscardPlay && !game.players[pid]?.pendingDiscardPlay
+      );
+      const bonusPlayers = [...new Set([...babylonPlayers, ...halikarnassusPlayers])];
+      if (bonusPlayers.length > 0) {
+        // Pause before ending age — let bonus players take their extra action
         return {
           ...game,
           phase: 'playing',
           age: game.age,
           turn: 7,   // signals "bonus turn" to UI and next resolveTurn call
           players,
-          hands: newHands,  // babylon players still have their last card
+          hands: newHands,
           discard,
           pendingActions: {},
-          babylonBonusPlayers: babylonPlayers,
+          babylonBonusPlayers: bonusPlayers,
           lastResolved: {
             age: game.age, turn: game.turn, actions: { ...actions } as any,
             coinChanges,
